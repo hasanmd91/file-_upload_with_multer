@@ -1,10 +1,13 @@
+//one file  upload method
 const express = require("express");
-const multer = require("multer");
 const path = require("path");
+const multer = require("multer");
 
-// prepare the final multer upload object
+const app = express();
 
-const UPLOADS_FOLDER = "./uploads/";
+const UPLOADS_FOLDER = "./uploads";
+
+// prepare multer function
 
 const Storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -12,71 +15,46 @@ const Storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    //The path.extname() method returns the extension of a file path.
-
-    const filextname = path.extname(file.originalname);
-    const filename =
+    const fileExt = path.extname(file.originalname);
+    const fileName =
       file.originalname
-        .replace("filextname", "")
+        .replace(fileExt, "")
         .toLowerCase()
         .split(" ")
         .join("_") +
       "_" +
       Date.now();
 
-    cb(null, filename + filextname);
+    cb(null, fileName + fileExt);
   },
 });
 
-const upload = multer({
+const uploads = multer({
   storage: Storage,
-  limits: {
-    fileSize: 1000000, // 1mb
-  },
-
+  limits: { fileSize: 1000000 }, //1mb
   fileFilter: (req, file, cb) => {
-    if (file.fieldname === "avatar") {
-      if (
-        file.mimetype === "image/png" ||
-        file.mimetype === "image/jpg " ||
-        file.mimetype === "image/jpeg"
-      ) {
-        cb(null, true);
-      } else {
-        cb(new Error(" only .jpg, .png, jpeg allowed "));
-      }
-    } else if (file.fieldname === "doc") {
-      if (file.mimetype === "application/pdf") {
-        cb(null, true);
-      } else {
-        cb(new Error(" only .pdf file allowed "));
-      }
+    if (
+      file.mimetype === "image/png" ||
+      file.mimetype === "image/jpg" ||
+      file.mimetype === "image/jpeg"
+    ) {
+      cb(null, true);
     } else {
-      cb(new Error(" There was an unknown error "));
+      cb(new Error(" only png, jpg, jpeg file allowed "));
     }
   },
 });
 
-const app = express();
+app.post("/", uploads.single("avatar"), (req, res) => {
+  res.send(" hellow world ");
+});
 
-// application route
-app.post(
-  "/",
-  upload.fields([
-    { name: "avatar", maxCount: 1 },
-    { name: "doc", maxCount: 1 },
-  ]),
-  (req, res) => {
-    res.send("hellow world");
-  }
-);
-
-// default error handeler
+// error handeling
 
 app.use((err, req, res, next) => {
   if (err) {
     if (err instanceof multer.MulterError) {
-      res.status(500).send("there was an upload error ");
+      res.status(500).send("there was an upload error");
     } else {
       res.status(500).send(err.message);
     }
@@ -85,6 +63,4 @@ app.use((err, req, res, next) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log(" app listening at port 3000 ");
-});
+app.listen(3000, () => console.log("server is listening "));
